@@ -1,0 +1,11 @@
+name = "cloudflare-proxy-panel"
+main = "worker.js"
+compatibility_date = "2023-10-25"
+
+# [vars]
+# You can set default variables here if needed
+# DEFAULT_PROXY = "https://example.com"
+
+# [[kv_namespaces]]
+# binding = "PROXY_CONFIG"
+# id = "YOUR_KV_NAMESPACE_ID"

@@ -60,7 +60,12 @@ export default {
 
     // Basic Rate Limiting
     const clientIP = request.headers.get("cf-connecting-ip") || "unknown";
-    if (!globalThis.rateLimits) globalThis.rateLimits = new Map();
+    if (!globalThis.rateLimits) {
+        globalThis.rateLimits = new Map();
+    } else if (globalThis.rateLimits.size > 1000) {
+        // Prevent memory leak in Worker isolate
+        globalThis.rateLimits.clear();
+    }
     const now = Date.now();
     const limit = globalThis.rateLimits.get(clientIP) || { count: 0, time: now };
 
@@ -81,13 +86,20 @@ export default {
       // Copy headers to avoid fingerprinting issues where possible
       const headers = new Headers(request.headers);
       headers.set('X-Forwarded-For', clientIP);
+      // Remove original Host header so the target server accepts the request
+      headers.delete('Host');
 
-      const newRequest = new Request(targetUrl, {
+      const requestInit = {
           method: request.method,
           headers: headers,
-          body: request.body,
           redirect: 'manual'
-      });
+      };
+
+      if (request.method !== 'GET' && request.method !== 'HEAD') {
+          requestInit.body = request.body;
+      }
+
+      const newRequest = new Request(targetUrl, requestInit);
 
       const response = await fetch(newRequest);
       return response;
